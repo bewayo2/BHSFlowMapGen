@@ -37,35 +37,53 @@
             max-width: 1200px;
             background: #fff;
             padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
         }
-        textarea {
+        textarea, input[type="text"], select {
             width: 100%;
-            height: 200px;
-            padding: 10px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
             font-size: 1rem;
             margin-bottom: 1rem;
             box-sizing: border-box;
+            background: #f9fafb;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        textarea:focus, input[type="text"]:focus, select:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 2px #cce4ff;
         }
         button {
             background-color: #007bff;
             color: white;
-            padding: 10px 20px;
+            padding: 12px 28px;
             border: none;
-            border-radius: 4px;
-            font-size: 1rem;
+            border-radius: 8px;
+            font-size: 1.08rem;
+            font-weight: 500;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: background 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.08);
+            margin-top: 0.5rem;
         }
         button:hover {
-            background-color: #0056b3;
+            background: linear-gradient(90deg, #0056b3 0%, #007bff 100%);
+            box-shadow: 0 4px 16px rgba(0,123,255,0.12);
         }
         button:disabled {
-            background-color: #aaa;
+            background-color: #b0b8c1;
             cursor: not-allowed;
+            box-shadow: none;
+        }
+        #downloadBtn {
+            background-color: #28a745;
+        }
+        #downloadBtn:hover {
+            background: linear-gradient(90deg, #218838 0%, #28a745 100%);
         }
         #output {
             margin-top: 2rem;
@@ -86,11 +104,71 @@
             width: 40px;
             height: 40px;
             animation: spin 2s linear infinite;
-            margin: 20px auto;
+            margin: 0;
+            position: relative;
+            top: 0; left: 0;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        #loader {
+            display: none;
+            position: fixed;
+            left: 0; top: 0; right: 0; bottom: 0;
+            z-index: 9999;
+            background: rgba(255,255,255,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        #edit-table, #nodes-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+        #edit-table th, #edit-table td, #nodes-table th, #nodes-table td {
+            border: 1px solid #e5e7eb;
+            padding: 10px;
+        }
+        #edit-table th, #nodes-table th {
+            background: #f3f4f6;
+            font-weight: 600;
+        }
+        #nodes-table input[type="text"], #nodes-table select {
+            margin-bottom: 0;
+            background: #f9fafb;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            font-size: 1rem;
+            padding: 8px 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        #nodes-table input[type="text"]:focus, #nodes-table select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px #cce4ff;
+        }
+        #chartTitle {
+            width: 60%;
+            max-width: 400px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            font-size: 1.08rem;
+            background: #f9fafb;
+            margin-left: 1em;
+            margin-bottom: 0.5em;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        #chartTitle:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 2px #cce4ff;
+        }
+        label[for="chartTitle"] {
+            font-size: 1.08rem;
+            font-weight: 500;
+            color: #222;
         }
     </style>
 </head>
@@ -102,8 +180,53 @@
         </div>
         <p>Paste your process description below and click "Generate Diagram".</p>
         <textarea id="inputText" placeholder="Describe your process here..."></textarea>
-        <button id="generateBtn">Generate Diagram</button>
+        <div id="controls">
+            <button id="generateBtn">Begin</button>
+            <button id="downloadBtn" style="display: none; margin-left: 10px; background-color: #28a745;">Download Chart</button>
+        </div>
+        <div id="loader" style="display:none;"><div class="loader"></div></div>
+        <div id="edit-container" style="display:none; margin-top: 1.5rem;">
+            <h3>Edit Chart Items</h3>
+            <div style="margin-bottom:1rem;">
+                <label for="chartTitle"><b>Chart Title:</b></label>
+                <input id="chartTitle" type="text" placeholder="Enter a title for your chart" style="width: 60%; max-width: 400px; margin-left: 1em;">
+            </div>
+            <div style="margin-bottom:1rem; background:#f8f9fa; border:1px solid #e0e0e0; border-radius:6px; padding:1em;">
+                <strong>Instructions:</strong><br>
+                <ul style="margin:0 0 0 1.2em; padding:0;">
+                  <li>For each row in the table below, you can edit the <b>Description</b> (a short label for the step, 2-4 words) and the <b>Role</b> (the person or group responsible for that step).</li>
+                  
+                  <li>When you are done, click <b>Create Chart</b> to update your diagram.</li>
+                </ul>
+            </div>
+            <form id="editForm">
+                <div style="overflow-x:auto;">
+                <table id="nodes-table">
+                    <thead>
+                        <tr style="">
+                            <th style="display:none;">ID</th>
+                            <th>Description</th>
+                            <th>Role</th>
+                            <th style="display:none;">Node Type</th>
+                        </tr>
+                    </thead>
+                    <tbody id="nodes-tbody"></tbody>
+                </table>
+                <div id="edges-section" style="display:none;">
+                  <table id="edges-table" style="margin-top:1.5rem;">
+                      <thead>
+                          <tr><th>From</th><th>To</th><th>Label (optional)</th><th></th></tr>
+                      </thead>
+                      <tbody id="edges-tbody"></tbody>
+                  </table>
+                  <button type="button" id="add-edge-btn" style="margin:0.5rem 0;">Add Edge</button>
+                </div>
+                </div>
+                <button type="submit" style="margin-top: 1rem;">Create Chart</button>
+            </form>
+        </div>
         <div id="output">
+            <h2 id="chart-title-display" style="display:none; margin-bottom:0.5em;"></h2>
             <div id="graph"></div>
             <div id="error"></div>
         </div>
@@ -113,77 +236,187 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const generateBtn = document.getElementById('generateBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
             const inputText = document.getElementById('inputText');
             const graphContainer = document.getElementById('graph');
             const errorContainer = document.getElementById('error');
-
+            const editContainer = document.getElementById('edit-container');
+            const editForm = document.getElementById('editForm');
+            const nodesTbody = document.getElementById('nodes-tbody');
+            const edgesTbody = document.getElementById('edges-tbody');
+            const addEdgeBtn = document.getElementById('add-edge-btn');
+            const loader = document.getElementById('loader');
             let graphviz;
+            let structure = { nodes: [], edges: [] };
+            let lastDotCode = '';
 
             async function initializeGraphviz() {
                 try {
                     if (window['@hpcc-js/wasm'] && window['@hpcc-js/wasm'].Graphviz) {
                         graphviz = await window['@hpcc-js/wasm'].Graphviz.load();
-                        console.log('Graphviz library loaded successfully');
-                    } else {
-                        throw new Error('Graphviz library not found');
-                    }
-                } catch (error) {
-                    console.error('Error initializing Graphviz:', error);
-                    errorContainer.textContent = 'Error: Graphviz library failed to load. Please check the console.';
-                }
+                    } else { throw new Error('Graphviz library not found'); }
+                } catch (error) { errorContainer.textContent = 'Error: Graphviz library failed to load.'; }
             }
 
             generateBtn.addEventListener('click', async () => {
                 const text = inputText.value.trim();
-                if (!text) {
-                    errorContainer.textContent = 'Please enter some text to generate a diagram.';
-                    return;
-                }
-
+                if (!text) { errorContainer.textContent = 'Please enter some text.'; return; }
                 generateBtn.disabled = true;
+                loader.style.display = 'flex';
+                const minTime = new Promise(res => setTimeout(res, 400));
                 errorContainer.textContent = '';
-                graphContainer.innerHTML = '<div class="loader"></div>';
-
+                graphContainer.innerHTML = '';
+                downloadBtn.style.display = 'none';
+                editContainer.style.display = 'none';
                 try {
-                    const response = await fetch('/api/generate-dot', {
+                    const response = await fetch('/api/extract-process-structure', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ text: text }),
                     });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-                    }
-
+                    if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || `HTTP error! status: ${response.status}`); }
                     const data = await response.json();
-                    graphContainer.innerHTML = ''; // Clear loader
-                    
-                    if (!graphviz) {
-                        await initializeGraphviz();
-                    }
-                    
-                    if (graphviz && data.dot) {
-                        const svg = graphviz.layout(data.dot, 'svg', 'dot');
-                        graphContainer.innerHTML = svg;
-                    } else if (!data.dot) {
-                         throw new Error('The model did not return any DOT code.');
+                    if (data.structure && data.structure.nodes && data.structure.nodes.length > 0) {
+                        structure = data.structure;
+                        buildNodesTable(structure.nodes);
+                        buildEdgesTable(structure.edges);
+                        editContainer.style.display = 'block';
                     } else {
-                        throw new Error('Graphviz could not be initialized.');
+                        throw new Error('No nodes extracted.');
                     }
-
                 } catch (error) {
-                    console.error('Error:', error);
-                    graphContainer.innerHTML = '';
                     errorContainer.textContent = `An error occurred: ${error.message}`;
-                } finally {
-                    generateBtn.disabled = false;
+                } finally { generateBtn.disabled = false; await minTime; loader.style.display = 'none'; }
+            });
+
+            function buildNodesTable(nodes) {
+                nodesTbody.innerHTML = '';
+                nodes.forEach((node, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="display:none;"><input class="id-input" type="text" value="${node.id || ''}" style="width:98%"></td>
+                        <td><input class="desc-input" type="text" value="${node.description || ''}" style="width:98%"></td>
+                        <td><input class="role-input" type="text" value="${node.role || ''}" style="width:98%"></td>
+                        <td style="display:none;">
+                            <select class="type-select" style="width:98%">
+                                <option value="rectangle" ${node.node_type === 'rectangle' ? 'selected' : ''}>rectangle</option>
+                                <option value="diamond" ${node.node_type === 'diamond' ? 'selected' : ''}>diamond</option>
+                                <option value="ellipse" ${node.node_type === 'ellipse' ? 'selected' : ''}>ellipse</option>
+                                <option value="parallelogram" ${node.node_type === 'parallelogram' ? 'selected' : ''}>parallelogram</option>
+                                <option value="circle" ${node.node_type === 'circle' ? 'selected' : ''}>circle</option>
+                            </select>
+                        </td>
+                    `;
+                    nodesTbody.appendChild(tr);
+                });
+            }
+            function buildEdgesTable(edges) {
+                edgesTbody.innerHTML = '';
+                edges.forEach((edge, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><input class="from-input" type="text" value="${edge.from || ''}" style="width:98%"></td>
+                        <td><input class="to-input" type="text" value="${edge.to || ''}" style="width:98%"></td>
+                        <td><input class="label-input" type="text" value="${edge.label || ''}" style="width:98%"></td>
+                        <td><button type="button" class="remove-edge-btn">Remove</button></td>
+                    `;
+                    edgesTbody.appendChild(tr);
+                });
+            }
+            addEdgeBtn.addEventListener('click', () => {
+                structure.edges.push({ from: '', to: '', label: '' });
+                buildEdgesTable(structure.edges);
+            });
+            nodesTbody.addEventListener('click', (e) => {
+                // Remove button is disabled/hidden, so nothing to do here
+            });
+            edgesTbody.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-edge-btn')) {
+                    const idx = Array.from(edgesTbody.children).indexOf(e.target.closest('tr'));
+                    structure.edges.splice(idx, 1);
+                    buildEdgesTable(structure.edges);
                 }
             });
-            
-            // Initialize Graphviz when page loads
+            editForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                loader.style.display = 'flex';
+                const minTime = new Promise(res => setTimeout(res, 400));
+                // Gather nodes
+                const nodeRows = nodesTbody.querySelectorAll('tr');
+                structure.nodes = Array.from(nodeRows).map(row => ({
+                    id: row.querySelector('.id-input').value.trim(),
+                    description: row.querySelector('.desc-input').value.trim(),
+                    role: row.querySelector('.role-input').value.trim(),
+                    node_type: row.querySelector('.type-select').value
+                }));
+                // Get chart title
+                const chartTitle = document.getElementById('chartTitle').value.trim();
+                structure.title = chartTitle;
+                // Gather edges
+                const edgeRows = edgesTbody.querySelectorAll('tr');
+                structure.edges = Array.from(edgeRows).map(row => ({
+                    from: row.querySelector('.from-input').value.trim(),
+                    to: row.querySelector('.to-input').value.trim(),
+                    label: row.querySelector('.label-input').value.trim()
+                }));
+                try {
+                    const response = await fetch('/api/generate-dot-from-structure', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ structure }),
+                    });
+                    if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || `HTTP error! status: ${response.status}`); }
+                    const data = await response.json();
+                    if (data.dot) {
+                        lastDotCode = data.dot;
+                        renderGraph(lastDotCode);
+                        // Show chart title above the chart
+                        const chartTitleDisplay = document.getElementById('chart-title-display');
+                        if (chartTitle) {
+                            chartTitleDisplay.textContent = chartTitle;
+                            chartTitleDisplay.style.display = 'block';
+                        } else {
+                            chartTitleDisplay.style.display = 'none';
+                        }
+                        editContainer.style.display = 'none';
+                        downloadBtn.style.display = 'inline-block';
+                    } else {
+                        throw new Error('No DOT code returned.');
+                    }
+                } catch (error) {
+                    errorContainer.textContent = `An error occurred: ${error.message}`;
+                } finally { await minTime; loader.style.display = 'none'; }
+            });
+            function renderGraph(dot) {
+                try {
+                    const svg = graphviz.layout(dot, 'svg', 'dot');
+                    graphContainer.innerHTML = svg;
+                    errorContainer.textContent = '';
+                } catch (e) {
+                    errorContainer.textContent = `Error rendering graph: ${e.message}`;
+                }
+            }
+            downloadBtn.addEventListener('click', () => {
+                const svgElement = graphContainer.querySelector('svg');
+                if (!svgElement) { errorContainer.textContent = 'No diagram available to download.'; return; }
+                const svgData = new XMLSerializer().serializeToString(svgElement);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const svgSize = svgElement.getBoundingClientRect();
+                canvas.width = svgSize.width;
+                canvas.height = svgSize.height;
+                const img = new Image();
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    const link = document.createElement('a');
+                    link.download = 'process-map.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                };
+                img.onerror = () => { errorContainer.textContent = 'Failed to load SVG for conversion.'; };
+                img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+            });
             initializeGraphviz();
         });
     </script>
